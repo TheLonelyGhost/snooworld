@@ -1,4 +1,3 @@
-import threading
 from typing import Dict, Optional
 
 import requests
@@ -9,8 +8,6 @@ from snooworld.rate_limit import RateCounter
 # This is a global variable to share across threads so when one thread updates the bearer token, they all reap the benefits. Keyed by username.
 auth_tokens: Dict[str, requests.auth.AuthBase] = {}
 rate_limiters: Dict[str, RateCounter] = {}
-
-lock = threading.RLock()
 
 
 class TokenRefreshError(ValueError):  # TODO: Better base class than ValueError?
@@ -37,8 +34,7 @@ class BaseRedditClient(requests.Session):
             request.url = self._base_url + request.url
 
         if self.rate_limiter:
-            # TODO: Enforce rate limiting wait times
-            pass
+            self.rate_limiter.throttle()
 
         return super(BaseRedditClient, self).prepare_request(request, **kwargs)
 
