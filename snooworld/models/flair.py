@@ -1,21 +1,8 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from snooworld.client import RedditClient
-
-
-class MalformedRedditResponse(ValueError):
-    def __init__(self, url, method: str = 'GET', *args, **kwargs):
-        msg = f'Reddit gave an unexpected format for the response. To see what happened, {method.upper()} {url}'
-        args.unshift(msg)
-        super(self, MalformedRedditResponse).__init__(*args, **kwargs)
-
-
-def _unwrap_listing(json: Dict[str, Any]) -> List[Dict[str, Any]]:
-    if json['kind'] != 'Listing':
-        raise ValueError('Object is not a Listing data structure')
-
-    return json['data']['children']
+from snooworld.models._base import _unwrap_listing, MalformedRedditResponse
 
 
 @dataclass
@@ -25,7 +12,7 @@ class Flair(object):
     template_id: Optional[str] = field(default=None)
 
     @classmethod
-    def from_comment_json(cls, json: Dict[str, Any]) -> 'Flair':
+    def from_json(cls, json: Dict[str, Any]) -> 'Flair':
         """A factory method for parsing the Reddit response JSON into a usable data object
 
         This is separated from `from_comment()` so we can test the retrieval via HTTP
@@ -68,4 +55,4 @@ class Flair(object):
         except (KeyError, ValueError):
             raise MalformedRedditResponse(url, 'GET')
 
-        return cls.from_comment_json(json)
+        return cls.from_json(json)
