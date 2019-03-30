@@ -1,3 +1,4 @@
+import calendar
 import threading
 import time
 
@@ -6,6 +7,9 @@ class RateCounter(object):
     def __init__(self):
         # Per rate counter we want to lock the threads accessing that instance, not per thread locking _everything_.
         self.lock = threading.RLock()
+        self.expire_time: int
+        self.calls_used: int
+        self.calls_left: int
 
         self.reset()
 
@@ -29,7 +33,7 @@ class RateCounter(object):
         # We need to handle if given out of order (comes in [1,2,3,4] and
         # is evaluated [3,2,4,1]) and figuring out what the latest one is
         # based on the args.
-        new_expire_time = time.gmtime() + time_left + 3
+        new_expire_time = calendar.timegm(time.gmtime()) + time_left + 3
         # 3 seconds more than Reddit's estimate for margin of error
 
         with self.lock:
