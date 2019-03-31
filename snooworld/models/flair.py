@@ -6,13 +6,13 @@ from snooworld.models._base import MalformedRedditResponse, _unwrap_listing
 
 
 @dataclass
-class Flair(object):
+class UserFlair(object):
     username: str
     text: str = field(default="")
     template_id: Optional[str] = field(default=None)
 
     @classmethod
-    def from_json(cls, json: Dict[str, Any]) -> "Flair":
+    def from_json(cls, json: Dict[str, Any]) -> "UserFlair":
         """A factory method for parsing the Reddit response JSON into a usable data object
 
         This is separated from `from_comment()` so we can test the retrieval via HTTP
@@ -30,7 +30,7 @@ class Flair(object):
         )
 
     @classmethod
-    def from_comment(cls, post_id: str, comment_id: str, http: RedditClient) -> "Flair":
+    def from_comment(cls, post_id: str, comment_id: str, http: RedditClient) -> "UserFlair":
         """The primary factory method for reading user flair.
 
         Unfortunately, Reddit needs an example comment the user has made to view the flair
