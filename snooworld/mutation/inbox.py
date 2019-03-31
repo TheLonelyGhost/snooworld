@@ -1,13 +1,10 @@
 from typing import Iterable
 
-from snooworld.client import RedditClient
 from snooworld.models import Message
+from snooworld.mutation._base import BaseMutator
 
 
-class MessageMutator(object):
-    def __init__(self, http: RedditClient):
-        self.http = http.authenticated
-
+class MessageMutator(BaseMutator):
     def read(self, messages: Iterable[Message]):
         data = {
             "id": ",".join([f"{m.kind}_{m.id}" for m in messages]),
