@@ -11,6 +11,7 @@ class Message(object):
     """
 
     id: str
+    kind: str
     subject: str
     body: str
     # mail from the mods makes this `None` sometimes, and that's okay
@@ -20,13 +21,12 @@ class Message(object):
 
     @classmethod
     def from_json(cls, json: Dict[str, Any]) -> "Message":
-        if not json["kind"] == "t1":
-            raise ValueError("Requires JSON to be for a Message")
-
+        kind = json["kind"]
         json = json["data"]
 
         return cls(
             id=json["id"],
+            kind=kind,
             author=json["author"],
             subject=json["subject"],
             body=json["body"],
