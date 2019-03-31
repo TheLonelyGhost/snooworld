@@ -8,6 +8,7 @@ from snooworld.models._base import MalformedRedditResponse, _unwrap_listing
 @dataclass
 class UserFlair(object):
     username: str
+    subreddit: str
     text: str = field(default="")
     template_id: Optional[str] = field(default=None)
 
@@ -25,6 +26,7 @@ class UserFlair(object):
 
         return cls(
             username=obj["author"],
+            subreddit=obj["subreddit"],
             text=obj["author_flair_text"],
             template_id=obj["author_flair_template_id"],
         )
