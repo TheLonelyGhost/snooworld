@@ -9,6 +9,7 @@ from snooworld.models._base import MalformedRedditResponse, _unwrap_listing
 class UserFlair(object):
     username: str
     subreddit: str
+    css_class: str
     text: str = field(default="")
     template_id: Optional[str] = field(default=None)
 
@@ -27,12 +28,15 @@ class UserFlair(object):
         return cls(
             username=obj["author"],
             subreddit=obj["subreddit"],
+            css_class=obj["author_flair_css_class"],
             text=obj["author_flair_text"],
             template_id=obj["author_flair_template_id"],
         )
 
     @classmethod
-    def from_comment(cls, post_id: str, comment_id: str, http: RedditClient) -> "UserFlair":
+    def from_comment(
+        cls, post_id: str, comment_id: str, http: RedditClient
+    ) -> "UserFlair":
         """The primary factory method for reading user flair.
 
         Unfortunately, Reddit needs an example comment the user has made to view the flair
