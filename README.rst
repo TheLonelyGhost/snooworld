@@ -25,3 +25,13 @@ First, install `Poetry`_ in your chosen manner, then setup your environment:
 .. _Poetry: https://poetry.eustace.io/
 
 This should install everything you need to get started.
+
+
+Roadmap
+-------
+
+- [x] User flair (read/write)
+- [x] Inbox messages (read/write)
+- [ ] Comment (read/reply)
+- [ ] Post (read/reply)
+- [ ] Post flair (read/write)
