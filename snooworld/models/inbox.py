@@ -33,8 +33,10 @@ class Message(object):
             context=json["context"],
         )
 
+
+class Inbox(object):
     # @api private
-    @classmethod
+    @staticmethod
     def __inbox(cls, where: str, http: RedditClient) -> "Iterator[Message]":
         query_data = {"mark": "false", "limit": "100"}
         inbox: List[Dict] = []
@@ -56,12 +58,12 @@ class Message(object):
             query_data["after"] = json["data"]["after"]
 
         # Oldest message first
-        return reversed([cls.from_json(m) for m in inbox])
+        return reversed([Message.from_json(m) for m in inbox])
 
-    @classmethod
-    def inbox(cls, http: RedditClient) -> "Iterator[Message]":
+    @staticmethod
+    def all(cls, http: RedditClient) -> "Iterator[Message]":
         return cls.__inbox("inbox", http)
 
-    @classmethod
-    def unread_inbox(cls, http: RedditClient) -> "Iterator[Message]":
+    @staticmethod
+    def unread(cls, http: RedditClient) -> "Iterator[Message]":
         return cls.__inbox("unread", http)
