@@ -12,6 +12,12 @@ requests = "^2.21"
 pytest = "^3.0"
 mypy = "^0.670.0"
 pre-commit = "^1.14"
+black = {version = "^18.3-alpha.0",allows-prereleases = true}
+isort = {version = "^4.3",extras = ["pyproject"]}
+
+[tool.isort]
+default_section = "THIRDPARTY"
+known_first_party = "snooworld"
 
 [build-system]
 requires = ["poetry>=0.12"]
