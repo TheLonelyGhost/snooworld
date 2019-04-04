@@ -28,6 +28,7 @@ class BaseRedditClient(requests.Session):
         )
 
         self._base_url = "https://www.reddit.com"
+        self._response_callbacks = []
 
     def prepare_request(self, request, **kwargs):
         if request.url.startswith("/"):
@@ -37,16 +38,12 @@ class BaseRedditClient(requests.Session):
         if self.rate_limiter:
             self.rate_limiter.throttle()
 
+        for func in self._response_callbacks:
+            request.register_hook("response", func)
+
         return super(BaseRedditClient, self).prepare_request(request, **kwargs)
 
-
-class AnonymousClient(BaseRedditClient):
-    def __init__(self, *args, **kwargs):
-        super(AnonymousClient, self).__init__(*args, **kwargs)
-
-        # This is invalid by design. Guaranteed not to overlap with an actual reddit username
-        username = ""
-
+    def _register_rate_limit_tracker(self, username):
         if not rate_limiters.get(username):
             rate_limiters[username] = RateCounter()
             self.rate_limiter = rate_limiters[username]
@@ -63,7 +60,15 @@ class AnonymousClient(BaseRedditClient):
 
             return resp
 
-        self.register_hook("response", rate_limit_tracker)
+        self._response_callbacks.append(rate_limit_tracker)
+
+
+class AnonymousClient(BaseRedditClient):
+    def __init__(self, *args, **kwargs):
+        super(AnonymousClient, self).__init__(*args, **kwargs)
+
+        # This is invalid by design. Guaranteed not to overlap with an actual reddit username
+        self._register_rate_limit_tracker(username="")
 
 
 class BearerTokenAuth(requests.auth.AuthBase):
@@ -77,7 +82,7 @@ class BearerTokenAuth(requests.auth.AuthBase):
 
 
 def is_invalid_bearer_token_response(resp: requests.models.Response) -> bool:
-    if resp.status_code == 401:
+    if resp.status_code in (401, 403):
         return True
 
     # This space intentionally left open for detecting edge-cases where we need to refresh the bearer token
@@ -94,35 +99,20 @@ class AuthenticatedClient(BaseRedditClient):
         self._refresh_counter = 0
 
         # Set here so we're sure the url checked to safeguard recursion is also used to make the call
-        refresh_url = "https://www.reddit.com/api/v1/access_token"
+        self._refresh_url = "https://www.reddit.com/api/v1/access_token"
 
-        if not auth_tokens.get(username, BearerTokenAuth(None, None)).token:
-            r = self.post(
-                refresh_url,
-                auth=(token, secret),
-                data={
-                    "grant_type": "password",
-                    "username": username,
-                    "password": password,
-                },
-            )
-            r.raise_for_status()
-            json = r.json()
-            auth_tokens[username] = BearerTokenAuth(
-                json["access_token"], json.get("refresh_token")
-            )
-            self.auth = auth_tokens[username]
+        self._register_rate_limit_tracker(username=username)
+        self._register_bearer_token_hook(
+            username=username, password=password, token=token, secret=secret
+        )
 
-        if not rate_limiters.get(username):
-            rate_limiters[username] = RateCounter()
-            self.rate_limiter = rate_limiters[username]
-
+    def _register_bearer_token_hook(self, username, password, token, secret):
         # We're defining this here so we can use some lexical scoping to involve
         # the Session object.
         def refresh_bearer_token(resp, *hook_args, **hook_kwargs):
             for past_response in list(resp.history) + [resp]:
                 # If refreshing the bearer token, don't recurse into refreshing the bearer token again. We're already doing that.
-                if refresh_url == past_response.url:
+                if self._refresh_url == past_response.url:
                     return resp
 
             if not is_invalid_bearer_token_response(resp):
@@ -138,7 +128,7 @@ class AuthenticatedClient(BaseRedditClient):
             # Attempt to refresh the bearer token with the given refresh token
             self._refresh_counter += 1
 
-            if auth_tokens[username].refresh_token:
+            if auth_tokens.get(username, BearerTokenAuth(None, None)).refresh_token:
                 data = {
                     "grant_type": "refresh_token",
                     "refresh_token": auth_tokens[username].refresh_token,
@@ -151,26 +141,20 @@ class AuthenticatedClient(BaseRedditClient):
                     "password": password,
                 }
 
-            r = self.post(refresh_url, auth=(token, secret), data=data)
+            r = self.post(self._refresh_url, auth=(token, secret), data=data)
             r.raise_for_status()
-            auth_tokens[username].token = r.json()["access_token"]
+            json = r.json()
+            if not auth_tokens.get(username):
+                auth_tokens[username] = BearerTokenAuth(
+                    json["access_token"], json.get("refresh_token")
+                )
+            else:
+                auth_tokens[username].token = json["access_token"]
 
             # Retry the request with the new token
             return self.send(resp.request)
 
-        def rate_limit_tracker(resp, *hook_args, **hook_kwargs):
-            if resp.headers.get("x-ratelimit-used"):
-                # Chances are the headers include all of the rate limiting stuff if this is given
-                rate_used = int(resp.headers["x-ratelimit-used"])
-                rate_left = int(resp.headers["x-ratelimit-remaining"])
-                rate_reset_time = int(resp.headers["x-ratelimit-reset"])
-
-                # Update the ratelimit cross-thread object
-                self.rate_limiter.update(rate_used, rate_left, rate_reset_time)
-
-            return resp
-
-        self.register_hook("response", refresh_bearer_token)
+        self._response_callbacks.append(refresh_bearer_token)
 
 
 class RedditClient(object):

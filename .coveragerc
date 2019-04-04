@@ -1,0 +1,14 @@
+# vim: ft=ini
+
+[run]
+# branch = True
+omit =
+  snooworld/mutation/*
+
+[paths]
+src =
+  snooworld/
+
+[report]
+show_missing = True
+# skip_covered = True
