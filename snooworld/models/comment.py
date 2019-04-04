@@ -20,13 +20,13 @@ class Comment(object):
         This is separated from `from_id()` so we can test the retrieval via HTTP
         separately from how it loads a JSON payload into the data structure.
         """
-        if json["kind"] != "t1":
+        if json["kind"] != "t1":  # pragma: no cover
             raise ValueError("Must be a Comment type JSON object")
 
         obj = json["data"]
 
-        if not obj["link_id"].startswith("t3_"):
-            raise ValueError("")
+        if not obj["link_id"].startswith("t3_"):  # pragma: no cover
+            raise ValueError("Must be a comment on a post")
 
         replies = []
         for comment in _unwrap_listing(obj["replies"]):
@@ -57,7 +57,7 @@ class Comment(object):
         # Because, for some reason, Reddit replies with a tuple (list with 2 items)
         # containing the post information at [0] and the comment info we seek at
         # index [1].
-        if not isinstance(json, list) or len(json) < 2:
+        if not isinstance(json, list) or len(json) < 2:  # pragma: no cover
             raise MalformedRedditResponse(url, "GET")
 
         # Reddit also wraps listings as their own object type. So a list of posts
@@ -65,7 +65,7 @@ class Comment(object):
         # it would be the actual list. Therefore, we unwrap it.
         try:
             json = _unwrap_listing(json[1])[0]
-        except (KeyError, ValueError):
+        except (KeyError, ValueError):  # pragma: no cover
             raise MalformedRedditResponse(url, "GET")
 
         return cls.from_json(json)
