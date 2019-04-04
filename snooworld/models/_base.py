@@ -11,7 +11,7 @@ def _unwrap_listing(json: Dict[str, Any]) -> List[Dict[str, Any]]:
     if not json:
         return []
 
-    if json["kind"] != "Listing":
+    if not isinstance(json, dict) or json["kind"] != "Listing":
         raise ValueError("Object is not a Listing data structure")
 
     return list(json["data"]["children"])
