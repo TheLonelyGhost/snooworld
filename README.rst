@@ -26,6 +26,12 @@ First, install `Poetry`_ in your chosen manner, then setup your environment:
 
 This should install everything you need to get started.
 
+Testing looks like this:
+
+.. code-block:: bash
+
+    $ poetry run pytest --cov=snooworld
+
 
 Roadmap
 -------

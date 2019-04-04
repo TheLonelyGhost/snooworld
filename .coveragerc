@@ -2,8 +2,8 @@
 
 [run]
 # branch = True
-omit =
-  snooworld/mutation/*
+# omit =
+#   snooworld/mutation/*
 
 [paths]
 src =
