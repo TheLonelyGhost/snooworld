@@ -7,7 +7,7 @@ from snooworld import __version__
 from snooworld.rate_limit import RateCounter
 
 # This is a global variable to share across threads so when one thread updates the bearer token, they all reap the benefits. Keyed by username.
-auth_tokens: Dict[str, 'BearerTokenAuth'] = {}
+auth_tokens: Dict[str, "BearerTokenAuth"] = {}
 rate_limiters: Dict[str, RateCounter] = {}
 
 
@@ -65,7 +65,9 @@ class BaseRedditClient(requests.Session):
                 rate_reset_time = int(float(resp.headers["x-ratelimit-reset"]))
 
                 # Update the ratelimit cross-thread object
-                rate_limiters[self._tracking_key].update(rate_used, rate_left, rate_reset_time)
+                rate_limiters[self._tracking_key].update(
+                    rate_used, rate_left, rate_reset_time
+                )
 
             return resp
 
@@ -101,20 +103,15 @@ def is_invalid_bearer_token_response(resp: requests.models.Response) -> bool:
 
 
 def is_bearer_token_request(request: requests.models.Request) -> bool:
-    return str(request.url).endswith('/api/v1/access_token')
+    return str(request.url).endswith("/api/v1/access_token")
 
 
 def is_bearer_token_response(resp: requests.models.Response) -> bool:
     for past_response in list(resp.history) + [resp]:
-        if str(past_response.url).endswith('.reddit.com/api/v1/access_token'):
+        if str(past_response.url).endswith(".reddit.com/api/v1/access_token"):
             return True
 
     return False
-
-
-def bearer_token_exists(tracking_key) -> bool:
-    # TODO: synchronize with other threads first
-    return bool(auth_tokens.get(tracking_key, BearerTokenAuth(None, None)).token)
 
 
 def add_new_bearer_token(tracking_key, bearer_token: BearerTokenAuth):
@@ -140,7 +137,12 @@ class AuthenticatedClient(BaseRedditClient):
 
         # Hooks
         self._register_rate_limit_tracker()
-        self._register_bearer_token_hook(username=username, password=password, client_id=client_id, secret_key=secret_key)
+        self._register_bearer_token_hook(
+            username=username,
+            password=password,
+            client_id=client_id,
+            secret_key=secret_key,
+        )
 
     def _register_bearer_token_hook(self, username, password, client_id, secret_key):
         # We're defining this here so we can use some lexical scoping to involve
@@ -155,7 +157,8 @@ class AuthenticatedClient(BaseRedditClient):
                 self._refresh_counter = 0
                 return resp
 
-            if self._refresh_counter > self._MAX_REAUTH_RETRIES:  # retried twice (or more)
+            if self._refresh_counter > self._MAX_REAUTH_RETRIES:
+                # Retried twice (or more)
                 raise TokenRefreshError(
                     "Found an infinite loop: Refreshing the bearer token works, but the resulting token appears to be invalid, triggering another refresh..."
                 )
@@ -177,13 +180,16 @@ class AuthenticatedClient(BaseRedditClient):
                     "password": password,
                 }
 
-            r = self.post("https://www.reddit.com/api/v1/access_token", auth=(client_id, secret_key), data=data)
+            r = self.post(
+                "https://www.reddit.com/api/v1/access_token",
+                auth=(client_id, secret_key),
+                data=data,
+            )
             r.raise_for_status()
             json = r.json()
             if not token.token:
-                token = BearerTokenAuth(
-                    json["access_token"], json.get("refresh_token")
-                )
+                # It's falsey, so must not exist. Create one!
+                token = BearerTokenAuth(json["access_token"], json.get("refresh_token"))
                 add_new_bearer_token(self._tracking_key, token)
             else:
                 # modify the token in-place, across threads
@@ -207,7 +213,9 @@ class RedditClient(object):
     def __init__(self, token, secret, username, password):
         self._anonymous = AnonymousClient()
 
-        self._authenticated = AuthenticatedClient(client_id=token, secret_key=secret, username=username, password=password)
+        self._authenticated = AuthenticatedClient(
+            client_id=token, secret_key=secret, username=username, password=password
+        )
 
     @property
     def anonymous(self):

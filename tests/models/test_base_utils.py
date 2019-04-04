@@ -5,8 +5,8 @@ from snooworld.models._base import _unwrap_listing
 
 def test_listing_unwrapper():
     with pytest.raises(ValueError):
-        _unwrap_listing(['a', 'b'])
+        _unwrap_listing(["a", "b"])
     with pytest.raises(ValueError):
-        _unwrap_listing(['a'])
+        _unwrap_listing(["a"])
 
     assert isinstance(_unwrap_listing([]), list)
