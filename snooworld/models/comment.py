@@ -49,7 +49,7 @@ class Comment(object):
         To retrieve the comment info, Reddit also requires context of the post upon which
         the comment was made. Yay. (>_<)
         """
-        url = f"https://www.reddit.com/comments/{post_id}/some-ignored-post-title-here/{comment_id}.json"
+        url = f"/comments/{post_id}/some-ignored-post-title-here/{comment_id}.json"
         r = http.anonymous.get(url)
         r.raise_for_status()
         json = r.json()
