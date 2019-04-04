@@ -37,7 +37,7 @@ class Message(object):
 class Inbox(object):
     # @api private
     @staticmethod
-    def __inbox(cls, where: str, http: RedditClient) -> "Iterator[Message]":
+    def __inbox(where: str, http: RedditClient) -> "Iterator[Message]":
         query_data = {"mark": "false", "limit": "100"}
         inbox: List[Dict] = []
 
@@ -46,7 +46,7 @@ class Inbox(object):
         # method again.
         for _ in range(30):
             r = http.authenticated.get(
-                f"/message/{where}.json", query={"mark": "false", "limit": "100"}
+                f"/message/{where}.json", params={"mark": "false", "limit": "100"}
             )
             r.raise_for_status()
             json = r.json()
@@ -60,10 +60,10 @@ class Inbox(object):
         # Oldest message first
         return reversed([Message.from_json(m) for m in inbox])
 
-    @staticmethod
+    @classmethod
     def all(cls, http: RedditClient) -> "Iterator[Message]":
         return cls.__inbox("inbox", http)
 
-    @staticmethod
+    @classmethod
     def unread(cls, http: RedditClient) -> "Iterator[Message]":
         return cls.__inbox("unread", http)
